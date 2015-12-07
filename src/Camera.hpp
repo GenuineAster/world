@@ -7,7 +7,6 @@ class Camera
 {
 public:
 	glm::vec3 target;
-	float distance;
 	glm::quat rotation;
 
 	glm::vec3 getDirection() const;

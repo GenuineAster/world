@@ -51,24 +51,19 @@ int main() {
 		return -1;
 	}
 
-	glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
-		switch (key) {
-			case GLFW_KEY_ESCAPE: {
-				glfwSetWindowShouldClose(window, GL_TRUE);
-			} break;
-			
-			default: break;
+	glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int, int action, int) {
+		if (action == GLFW_PRESS) {
+			switch (key) {
+				case GLFW_KEY_ESCAPE: {
+					glfwSetWindowShouldClose(window, GL_TRUE);
+				} break;
+				
+				default: break;
+			}
 		}
 	});
 
-	glfwSetScrollCallback(window, [](GLFWwindow *window, double xoffset, double yoffset) {
-		if (yoffset < 0)
-			camera.distance = std::max(1.0, camera.distance*1.1);
-		else if (yoffset > 0)
-			camera.distance *= 0.9;
-	});
-
-	glfwSetMouseButtonCallback(window, [](GLFWwindow *window, int button, int action, int mods) {
+	glfwSetMouseButtonCallback(window, [](GLFWwindow *window, int button, int, int) {
 		if (button == GLFW_MOUSE_BUTTON_RIGHT) {
 			glfwGetCursorPos(window, &mouse.prev.x, &mouse.prev.y);
 		}
@@ -138,12 +133,7 @@ int main() {
 	shader.setUniformData(model_uniform, model);
 
 
-	glm::vec3 eye {0.f, 0.f, 100.f};
-	glm::vec3 center {0.f, 0.f, 1.f};
-	glm::vec3 up {0.f, 1.f, 0.f};
-
-	camera.distance = 100.f;
-	camera.target = center;
+	camera.target = {0.f, 0.f, 1.f};
 	glm::mat4 view = camera.getTransform();
 	auto view_uniform = shader.getUniformLocation("uView");
 	shader.setUniformData(view_uniform, view);

@@ -39,8 +39,8 @@ public:
 					indices.push_back((i+0) + (j+1) * (divs+1));
 
 					indices.push_back((i+1) + (j+1) * (divs+1));
-					indices.push_back((i+1) + (j+0) * (divs+1));
 					indices.push_back((i+0) + (j+1) * (divs+1));
+					indices.push_back((i+1) + (j+0) * (divs+1));
 				}
 			}
 		}

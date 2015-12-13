@@ -123,9 +123,9 @@ namespace Graphics
 			return glIsTexture(m_texture) || m_valid;
 		}
 
-		Texture::Texture() : m_texture(-1), m_tex_num(GL_TEXTURE0)
+		Texture::Texture() : m_texture(-1), m_tex_num(GL_TEXTURE0), m_valid(false)
 		{
-			this->create();
+			// this->create();
 		}
 
 		Texture::~Texture()

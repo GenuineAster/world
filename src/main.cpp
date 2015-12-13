@@ -35,6 +35,9 @@ struct {
 
 constexpr struct {float x,y;} resolution {1280, 720};
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 int main() {
 	// Window/context setup
 	glfwInit();
@@ -103,6 +106,10 @@ int main() {
 	vertex.setSourceFromFile("res/shaders/shader.vert");
 	vertex.compile();
 
+	Graphics::OpenGL::Shader geometry(GL_GEOMETRY_SHADER);
+	geometry.setSourceFromFile("res/shaders/shader.geom");
+	geometry.compile();
+
 	Graphics::OpenGL::Shader fragment(GL_FRAGMENT_SHADER);
 	fragment.setSourceFromFile("res/shaders/shader.frag");
 	fragment.compile();
@@ -110,6 +117,7 @@ int main() {
 	Graphics::OpenGL::ShaderProgram shader;
 	shader.create();
 	shader.attach(vertex);
+	shader.attach(geometry);
 	shader.attach(fragment);
 	shader.link();
 	shader.bindFragDataLocation("fColor", 0);
@@ -139,10 +147,22 @@ int main() {
 	shader.setUniformData(view_uniform, view);
 
 
-	DrawableGrid<> grid(256);
+	DrawableGrid<> grid(64);
 	
 	Tile tile(&grid);
 	tile.loadFromFile("res/test.png");
+	shader.setUniformData(shader.getUniformLocation("uHeightmap"), tile.heightmap);
+
+	Graphics::OpenGL::Texture dirt;
+	{
+		int x,y,comp;
+		uint8_t *data = stbi_load("res/dirt.jpg", &x, &y, &comp, 4);
+		dirt.create();
+		dirt.bind(GL_TEXTURE1, GL_TEXTURE_2D);
+		dirt.texImage2D(0, GL_RGBA, x, y, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		stbi_image_free(data);
+	}
+	shader.setUniformData(shader.getUniformLocation("uTex"), dirt);
 
 	Util::FrameTimer frame_timer;
 
@@ -188,7 +208,6 @@ int main() {
 			view = camera.getTransform();
 			shader.setUniformData(view_uniform, view);
 
-			shader.setUniformData(shader.getUniformLocation("uHeightmap"), tile.heightmap);
 			tile.draw();
 
 			glfwSwapBuffers(window);

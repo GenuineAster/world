@@ -2,7 +2,6 @@
 #include "DrawableGrid.hpp"
 #include "OpenGL/Texture.hpp"
 
-#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 class Tile
@@ -17,6 +16,7 @@ public:
 		heightmap.create();
 		heightmap.bind(GL_TEXTURE0, GL_TEXTURE_2D);
 		heightmap.texImage2D(0, GL_R8, x, y, GL_RED, GL_UNSIGNED_BYTE, data);
+		stbi_image_free(data);
 	}
 
 	void draw() {

@@ -118,7 +118,7 @@ namespace Graphics
 			/*! \brief Returns the internal OpenGL texture object
 			 *  \returns the internal OpenGL texture object
 			 */
-			operator GLuint();
+			explicit operator GLuint();
 
 			/*! \brief Returns whether the texture is correctly formed or not
 			 *  \returns whether the texture is correctly formed or not

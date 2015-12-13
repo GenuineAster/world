@@ -19,7 +19,7 @@ namespace Graphics
 		) {
 			glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
 			glFramebufferTexture1D(
-				GL_FRAMEBUFFER, attachment, tex.getTarget(), tex, level
+				GL_FRAMEBUFFER, attachment, tex.getTarget(), tex.getTextureNum(), level
 			);
 		}
 
@@ -30,7 +30,7 @@ namespace Graphics
 		) {
 			glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
 			glFramebufferTexture2D(
-				GL_FRAMEBUFFER, attachment, tex.getTarget(), tex, level
+				GL_FRAMEBUFFER, attachment, tex.getTarget(), tex.getTextureNum(), level
 			);
 		}
 
@@ -42,7 +42,7 @@ namespace Graphics
 		) {
 			glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
 			glFramebufferTexture3D(
-				GL_FRAMEBUFFER, attachment, tex.getTarget(), tex, level, layer
+				GL_FRAMEBUFFER, attachment, tex.getTarget(), tex.getTextureNum(), level, layer
 			);
 		}
 

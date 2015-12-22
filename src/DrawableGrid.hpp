@@ -14,8 +14,7 @@ private:
 public:
 	void bind() const {
 		glBindVertexArray(vao);
-		// glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		// glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	}
 	void draw() const {
 		glDrawElements(GL_TRIANGLES, indices.size(), index_type, nullptr);
@@ -30,7 +29,6 @@ public:
 		for (auto i=0; i <= divs; ++i) {
 			for (auto j=0; j <= divs; ++j) {
 				auto vertex = glm::vec2{i, j} / glm::vec2{divs, divs};
-				// vertex -= glm::vec3{1.0, 1.0, 0.0};
 				vertices.push_back(vertex);
 
 				if (i < divs && j < divs) {

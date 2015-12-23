@@ -12,11 +12,13 @@ public:
 
 	void loadFromFile(const std::string &filename) {
 		int x,y,comp;
-		uint8_t *data = stbi_load(filename.c_str(), &x, &y, &comp, 0);
-		heightmap.create();
-		heightmap.bind(GL_TEXTURE0, GL_TEXTURE_2D);
-		heightmap.texImage2D(0, GL_R8, x, y, GL_RED, GL_UNSIGNED_BYTE, data);
-		stbi_image_free(data);
+		uint8_t *data = stbi_load(filename.c_str(), &x, &y, &comp, 1);
+		if (data) {
+			heightmap.create();
+			heightmap.bind(GL_TEXTURE1, GL_TEXTURE_2D);
+			heightmap.texImage2D(0, GL_R8, x, y, GL_RED, GL_UNSIGNED_BYTE, data);
+			stbi_image_free(data);
+		}
 	}
 
 	void draw() {

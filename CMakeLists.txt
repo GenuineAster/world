@@ -41,6 +41,16 @@ find_package(JsonCPP)
 include_directories(${JSONCPP_INCLUDE_DIR})
 link_libraries(${JSONCPP_LIBRARY})
 
+include_directories(ext/imgui)
+include_directories(ext/imgui-glfw)
+
+add_library(imgui ext/imgui/imgui.h
+                  ext/imgui/imgui.cpp
+                  ext/imgui/imgui_draw.cpp
+                  ext/imgui-glfw/imgui_impl_glfw_gl3.cpp
+)
+link_libraries(imgui)
+
 
 # Enable C++14
 if(CMAKE_COMPILER_IS_GNUCXX)

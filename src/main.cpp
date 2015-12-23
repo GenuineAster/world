@@ -13,6 +13,7 @@
 
 #include <array>
 #include <thread>
+#include <cstring>
 #include <iomanip>
 #include <fstream>
 #include <iostream>
@@ -25,6 +26,9 @@
 #include "Tile.hpp"
 #include "DrawableGrid.hpp"
 #include "Util/FrameTimer.hpp"
+
+#include "imgui.h"
+#include "imgui_impl_glfw_gl3.h"
 
 Camera camera;
 struct {
@@ -54,22 +58,42 @@ int main() {
 		return -1;
 	}
 
-	glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int, int action, int) {
+	glfwMakeContextCurrent(window);
+
+	glewExperimental = GL_TRUE;
+	if (glewInit()) {
+		return -1;
+	}
+
+
+	ImGui_ImplGlfwGL3_Init(window, true);
+	// ImGui configuration block
+	{
+		auto &io = ImGui::GetIO();
+		io.LogFilename = nullptr;
+		io.IniFilename = nullptr;
+	}
+
+	glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
 		if (action == GLFW_PRESS) {
 			switch (key) {
 				case GLFW_KEY_ESCAPE: {
-					glfwSetWindowShouldClose(window, GL_TRUE);
+					glfwSetWindowShouldClose(window, true);
 				} break;
 				
 				default: break;
 			}
 		}
+
+		ImGui_ImplGlfwGL3_KeyCallback(window, key, scancode, action, mods);
 	});
 
-	glfwSetMouseButtonCallback(window, [](GLFWwindow *window, int button, int, int) {
+	glfwSetMouseButtonCallback(window, [](GLFWwindow *window, int button, int action, int mods) {
 		if (button == GLFW_MOUSE_BUTTON_RIGHT) {
 			glfwGetCursorPos(window, &mouse.prev.x, &mouse.prev.y);
 		}
+
+		ImGui_ImplGlfwGL3_MouseButtonCallback(window, button, action, mods);
 	});
 
 	glfwSetCursorPosCallback(window, [](GLFWwindow *window, double x, double y) {
@@ -88,12 +112,6 @@ int main() {
 		}
 	});
 
-	glfwMakeContextCurrent(window);
-
-	glewExperimental = GL_TRUE;
-	if (glewInit()) {
-		return -1;
-	}
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -149,8 +167,9 @@ int main() {
 
 	DrawableGrid<> grid(64);
 	
+	std::string map_file = "res/test.png";
 	Tile tile(&grid);
-	tile.loadFromFile("res/test.png");
+	tile.loadFromFile(map_file);
 	shader.setUniformData(shader.getUniformLocation("uHeightmap"), tile.heightmap);
 
 	Graphics::OpenGL::Texture dirt;
@@ -158,7 +177,7 @@ int main() {
 		int x,y,comp;
 		uint8_t *data = stbi_load("res/dirt.jpg", &x, &y, &comp, 4);
 		dirt.create();
-		dirt.bind(GL_TEXTURE1, GL_TEXTURE_2D);
+		dirt.bind(GL_TEXTURE2, GL_TEXTURE_2D);
 		dirt.texImage2D(0, GL_RGBA, x, y, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		stbi_image_free(data);
 	}
@@ -184,23 +203,25 @@ int main() {
 		{
 			glfwPollEvents();
 
-			if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-				camera.target += camera.getDirection() * (frametime * 1.f);
-			}
-			if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-				camera.target -= camera.getRight() * (frametime * 1.f);
-			}
-			if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-				camera.target -= camera.getDirection() * (frametime * 1.f);
-			}
-			if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-				camera.target += camera.getRight() * (frametime * 1.f);
-			}
-			if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-				camera.target += camera.getUp() * (frametime * 1.f);
-			}
-			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-				camera.target -= camera.getUp() * (frametime * 1.f);
+			if (!ImGui::GetIO().WantCaptureKeyboard) {
+				if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+					camera.target += camera.getDirection() * (frametime * 1.f);
+				}
+				if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+					camera.target -= camera.getRight() * (frametime * 1.f);
+				}
+				if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+					camera.target -= camera.getDirection() * (frametime * 1.f);
+				}
+				if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+					camera.target += camera.getRight() * (frametime * 1.f);
+				}
+				if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+					camera.target += camera.getUp() * (frametime * 1.f);
+				}
+				if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+					camera.target -= camera.getUp() * (frametime * 1.f);
+				}
 			}
 
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -209,6 +230,36 @@ int main() {
 			shader.setUniformData(view_uniform, view);
 
 			tile.draw();
+
+			{
+				auto &io = ImGui::GetIO();
+				ImGui_ImplGlfwGL3_NewFrame(frametime);
+				static bool imwin = true;
+				ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.25);
+				ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0);
+				constexpr float ui_size = 0.3;
+				ImGui::SetNextWindowPos({io.DisplaySize.x - ui_size*io.DisplaySize.x, 0.f});
+				ImGui::SetNextWindowSize({ui_size*io.DisplaySize.x, io.DisplaySize.y});
+				ImGui::Begin("window", &imwin,
+					ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize   | ImGuiWindowFlags_NoMove |
+					ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoCollapse | 0
+				);
+				{
+					char path[512];
+					std::strcpy(path, map_file.data());
+					ImGui::Text("Heightmap file");
+					ImGui::SameLine();
+					ImGui::InputText("", path, 512);
+					if (path != map_file) {
+						tile.loadFromFile(path);
+						map_file = path;
+					}
+				}
+				ImGui::End();
+				ImGui::PopStyleVar();
+				ImGui::PopStyleVar();
+			}
+			ImGui::Render();
 
 			glfwSwapBuffers(window);
 		}
@@ -230,4 +281,7 @@ int main() {
 			glfwSetTime(0.0);
 		}
 	}
+
+	ImGui_ImplGlfwGL3_Shutdown();
+	glfwTerminate();
 }

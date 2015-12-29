@@ -187,6 +187,8 @@ int main() {
 
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 
+	constexpr float ui_size = 0.2;
+
 	auto frame_start = std::chrono::high_resolution_clock::now();
 
 	while (!glfwWindowShouldClose(window)) {
@@ -229,15 +231,19 @@ int main() {
 			view = camera.getTransform();
 			shader.setUniformData(view_uniform, view);
 
+			glViewport(0, 0, resolution.x - resolution.x * ui_size, resolution.y);
+
 			tile.draw();
+
+			glViewport(0, 0, resolution.x, resolution.y);
 
 			{
 				auto &io = ImGui::GetIO();
 				ImGui_ImplGlfwGL3_NewFrame(frametime);
 				static bool imwin = true;
 				ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.25);
+				ImGui::PushStyleColor(ImGuiCol_WindowBg, {0.2, 0.1, 0.1, 1.0});
 				ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0);
-				constexpr float ui_size = 0.3;
 				ImGui::SetNextWindowPos({io.DisplaySize.x - ui_size*io.DisplaySize.x, 0.f});
 				ImGui::SetNextWindowSize({ui_size*io.DisplaySize.x, io.DisplaySize.y});
 				ImGui::Begin("window", &imwin,
@@ -257,6 +263,7 @@ int main() {
 				}
 				ImGui::End();
 				ImGui::PopStyleVar();
+				ImGui::PopStyleColor();
 				ImGui::PopStyleVar();
 			}
 			ImGui::Render();

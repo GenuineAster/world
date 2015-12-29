@@ -4,12 +4,18 @@ layout(triangles) in;
 layout(triangle_strip, max_vertices=3) out;
 
 in vec2 vTexcoords[];
-in float vHeight[];
 
-out vec4 gPosition;
+uniform mat4 uView;
+uniform mat4 uProjection;
+uniform float uNear, uFar;
+
 out vec2 gTexcoords;
-out float gHeight;
 out vec3 gNormal;
+
+void fixDepth(inout vec4 P) {
+	P.z = 2.0*log(P.w/uNear)/log(uFar/uNear) - 1; 
+	P.z *= P.w;
+}
 
 void main() {
 	gNormal = normalize(cross(
@@ -17,22 +23,18 @@ void main() {
 		vec3(gl_in[2].gl_Position - gl_in[0].gl_Position)
 	));
 
-	gl_Position = gl_in[0].gl_Position;
-	gPosition = gl_in[0].gl_Position;
+	mat4 transform = uProjection * uView;
+
+	gl_Position = transform * gl_in[0].gl_Position;
 	gTexcoords = vTexcoords[0];
-	gHeight = vHeight[0];
 	EmitVertex();
 
-	gl_Position = gl_in[1].gl_Position;
-	gPosition = gl_in[1].gl_Position;
+	gl_Position = transform * gl_in[1].gl_Position;
 	gTexcoords = vTexcoords[1];
-	gHeight = vHeight[1];
 	EmitVertex();
 
-	gl_Position = gl_in[2].gl_Position;
-	gPosition = gl_in[2].gl_Position;
+	gl_Position = transform * gl_in[2].gl_Position;
 	gTexcoords = vTexcoords[2];
-	gHeight = vHeight[2];
 	EmitVertex();
 
 	EndPrimitive();

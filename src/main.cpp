@@ -30,6 +30,9 @@
 #include "imgui.h"
 #include "imgui_impl_glfw_gl3.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 Camera camera;
 struct {
 	glm::dvec2 prev;
@@ -39,8 +42,7 @@ struct {
 
 constexpr struct {float x,y;} resolution {1280, 720};
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+void initCallbacks(GLFWwindow *window);
 
 int main() {
 	// Window/context setup
@@ -74,46 +76,10 @@ int main() {
 		io.IniFilename = nullptr;
 	}
 
-	glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
-		if (action == GLFW_PRESS) {
-			switch (key) {
-				case GLFW_KEY_ESCAPE: {
-					glfwSetWindowShouldClose(window, true);
-				} break;
-				
-				default: break;
-			}
-		}
-
-		ImGui_ImplGlfwGL3_KeyCallback(window, key, scancode, action, mods);
-	});
-
-	glfwSetMouseButtonCallback(window, [](GLFWwindow *window, int button, int action, int mods) {
-		if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-			glfwGetCursorPos(window, &mouse.prev.x, &mouse.prev.y);
-		}
-
-		ImGui_ImplGlfwGL3_MouseButtonCallback(window, button, action, mods);
-	});
-
-	glfwSetCursorPosCallback(window, [](GLFWwindow *window, double x, double y) {
-		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
-			mouse.current = {x, y};
-			mouse.delta = mouse.current - mouse.prev;
-			mouse.prev = mouse.current;
-
-			glm::vec3 up   { 0.f, 0.f,-1.f};
-			glm::vec3 right{ 1.f, 0.f, 0.f};
-
-			glm::quat xrot = glm::angleAxis(-mouse.delta.x/300.f, glm::inverse(camera.rotation) * up);
-			glm::quat yrot = glm::angleAxis(-mouse.delta.y/200.f, right);
-			camera.rotation *=  xrot * yrot;
-			camera.rotation = glm::normalize(camera.rotation);
-		}
-	});
-
+	initCallbacks(window);
 
 	glEnable(GL_DEPTH_TEST);
+	
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBlendEquation(GL_FUNC_ADD);
@@ -140,6 +106,7 @@ int main() {
 	shader.link();
 	shader.bindFragDataLocation("fColor", 0);
 	shader.use();
+
 
 	// Uniform setup/defaults
 	float near = 0.1f;
@@ -291,4 +258,44 @@ int main() {
 
 	ImGui_ImplGlfwGL3_Shutdown();
 	glfwTerminate();
+}
+
+void initCallbacks(GLFWwindow *window) {
+	glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
+		if (action == GLFW_PRESS) {
+			switch (key) {
+				case GLFW_KEY_ESCAPE: {
+					glfwSetWindowShouldClose(window, true);
+				} break;
+				
+				default: break;
+			}
+		}
+
+		ImGui_ImplGlfwGL3_KeyCallback(window, key, scancode, action, mods);
+	});
+
+	glfwSetMouseButtonCallback(window, [](GLFWwindow *window, int button, int action, int mods) {
+		if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+			glfwGetCursorPos(window, &mouse.prev.x, &mouse.prev.y);
+		}
+
+		ImGui_ImplGlfwGL3_MouseButtonCallback(window, button, action, mods);
+	});
+
+	glfwSetCursorPosCallback(window, [](GLFWwindow *window, double x, double y) {
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
+			mouse.current = {x, y};
+			mouse.delta = mouse.current - mouse.prev;
+			mouse.prev = mouse.current;
+
+			glm::vec3 up   { 0.f, 0.f,-1.f};
+			glm::vec3 right{ 1.f, 0.f, 0.f};
+
+			glm::quat xrot = glm::angleAxis(-mouse.delta.x/300.f, glm::inverse(camera.rotation) * up);
+			glm::quat yrot = glm::angleAxis(-mouse.delta.y/200.f, right);
+			camera.rotation *=  xrot * yrot;
+			camera.rotation = glm::normalize(camera.rotation);
+		}
+	});
 }

@@ -29,8 +29,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw_gl3.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include <FreeImagePlus.h>
 
 Camera camera;
 struct {
@@ -141,15 +140,14 @@ int main() {
 	std::string map_file = "res/maps/basic.json";
 	map.loadFromFile("res/maps/basic.json");
 
-	Graphics::OpenGL::Texture dirt, dirt_compressed;
+	Graphics::OpenGL::Texture dirt;
 	{
-		int x,y,comp;
-		uint8_t *data = stbi_load("res/dirt.jpg", &x, &y, &comp, 3);
+		fipImage dirt_img;
+		dirt_img.load("res/dirt.png");
 		dirt.create();
 		dirt.bind(GL_TEXTURE3, GL_TEXTURE_2D);
-		dirt.texImage2D(0, GL_RGB, x, y, GL_RGB, GL_UNSIGNED_BYTE, data);
+		dirt.texImage2D(0, GL_RGB, dirt_img.getWidth(), dirt_img.getHeight(), GL_BGR, GL_UNSIGNED_BYTE, dirt_img.accessPixels());
 		glGenerateMipmap(GL_TEXTURE_2D);
-		stbi_image_free(data);
 	}
 	shader.setUniformData(shader.getUniformLocation("uTex"), dirt);
 

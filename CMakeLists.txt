@@ -17,19 +17,17 @@ set(SRC_DIR "src")
 file(GLOB_RECURSE SOURCES LIST_DIRECTORIES false ${SRC_DIR}/*)
 
 
-include_directories(ext/stb)
-
 include_directories(${SRC_DIR})
 
-find_package(GLFW)
+find_package(GLFW REQUIRED)
 include_directories(${GLFW_INCLUDE_DIRS})
 link_libraries(${GLFW_LIBRARIES})
 
-find_package(GLEW)
+find_package(GLEW REQUIRED)
 include_directories(${GLEW_INCLUDE_DIRS})
 link_libraries(${GLEW_LIBRARIES})
 
-find_package(OpenGL)
+find_package(OpenGL REQUIRED)
 include_directories(${OPENGL_INCLUDE_DIRS})
 link_libraries(${OPENGL_LIBRARIES})
 
@@ -37,9 +35,13 @@ find_package(Assimp)
 include_directories(${ASSIMP_INCLUDE_DIRS})
 link_libraries(${ASSIMP_LIBRARIES})
 
-find_package(JsonCPP)
+find_package(JsonCPP REQUIRED)
 include_directories(${JSONCPP_INCLUDE_DIR})
 link_libraries(${JSONCPP_LIBRARY})
+
+find_package(FreeImage REQUIRED)
+include_directories(${FREEIMAGE_INCLUDE_DIR})
+link_libraries(${FREEIMAGE_LIBRARIES})
 
 include_directories(ext/imgui)
 include_directories(ext/imgui-glfw)

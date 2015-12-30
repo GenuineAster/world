@@ -1,8 +1,9 @@
 #pragma once
+#include <FreeImagePlus.h>
+
 #include "DrawableGrid.hpp"
 #include "OpenGL/Texture.hpp"
 
-#include "stb_image.h"
 
 class Tile
 {
@@ -36,14 +37,13 @@ public:
 
 		m_heightmap.create();
 		
-		int x,y,comp;
-		uint8_t *stbi_data = stbi_load(path.c_str(), &x, &y, &comp, 1);
+		fipImage image;
+		image.load(path.c_str());
 
-		if (stbi_data) {
+		if (image) {
 			m_heightmap_path = path;
 			m_heightmap.bind(GL_TEXTURE1, GL_TEXTURE_2D);
-			m_heightmap.texImage2D(0, GL_R8, x, y, GL_RED, GL_UNSIGNED_BYTE, stbi_data);
-			stbi_image_free(stbi_data);
+			m_heightmap.texImage2D(0, GL_R16, image.getWidth(), image.getHeight(), GL_RED, GL_UNSIGNED_SHORT, image.accessPixels());
 		}	
 
 		return *this;

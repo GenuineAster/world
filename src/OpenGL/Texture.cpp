@@ -128,6 +128,29 @@ namespace Graphics
 			// this->create();
 		}
 
+		Texture &Texture::operator=(Texture &&other)
+		{
+			this->m_target = other.m_target;
+			this->m_texture = other.m_texture;
+			this->m_valid = other.m_valid;
+			this->m_tex_num = other.m_tex_num;
+
+			other.m_valid = 0;
+			other.m_texture = -1;
+			return *this;
+		}
+
+		Texture::Texture(Texture &&other)
+		{
+			this->m_target = other.m_target;
+			this->m_texture = other.m_texture;
+			this->m_valid = other.m_valid;
+			this->m_tex_num = other.m_tex_num;
+
+			other.m_valid = 0;
+			other.m_texture = -1;
+		}
+
 		Texture::~Texture()
 		{
 			this->destroy();

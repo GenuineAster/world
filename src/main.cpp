@@ -20,10 +20,9 @@
 #include <exception>
 #include <functional>
 
-#include <json/json.h>
-
 #include "Camera.hpp"
 #include "Tile.hpp"
+#include "TileMap.hpp"
 #include "DrawableGrid.hpp"
 #include "Util/FrameTimer.hpp"
 
@@ -79,6 +78,10 @@ int main() {
 	initCallbacks(window);
 
 	glEnable(GL_DEPTH_TEST);
+
+	glEnable(GL_CULL_FACE);
+	glFrontFace(GL_CW);
+	glCullFace(GL_BACK);
 	
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -109,11 +112,11 @@ int main() {
 
 
 	// Uniform setup/defaults
-	float near = 0.1f;
+	float near = 0.1f/256.f;
 	auto near_uniform = shader.getUniformLocation("uNear");
 	shader.setUniformData(near_uniform, near);
 
-	float far = 1000000.f;
+	float far = 1000000.f/256.f;
 	auto far_uniform = shader.getUniformLocation("uFar");
 	shader.setUniformData(far_uniform, far);
 
@@ -132,20 +135,20 @@ int main() {
 	shader.setUniformData(view_uniform, view);
 
 
-	DrawableGrid<> grid(64);
-	
-	std::string map_file = "res/test.png";
-	Tile tile(&grid);
-	tile.loadFromFile(map_file);
-	shader.setUniformData(shader.getUniformLocation("uHeightmap"), tile.heightmap);
+	DrawableGrid<uint32_t, GL_UNSIGNED_INT> grid(128);
 
-	Graphics::OpenGL::Texture dirt;
+	TileMap map;
+	std::string map_file = "res/maps/basic.json";
+	map.loadFromFile("res/maps/basic.json");
+
+	Graphics::OpenGL::Texture dirt, dirt_compressed;
 	{
 		int x,y,comp;
-		uint8_t *data = stbi_load("res/dirt.jpg", &x, &y, &comp, 4);
+		uint8_t *data = stbi_load("res/dirt.jpg", &x, &y, &comp, 3);
 		dirt.create();
-		dirt.bind(GL_TEXTURE2, GL_TEXTURE_2D);
-		dirt.texImage2D(0, GL_RGBA, x, y, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		dirt.bind(GL_TEXTURE3, GL_TEXTURE_2D);
+		dirt.texImage2D(0, GL_RGB, x, y, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
 		stbi_image_free(data);
 	}
 	shader.setUniformData(shader.getUniformLocation("uTex"), dirt);
@@ -200,7 +203,14 @@ int main() {
 
 			glViewport(0, 0, resolution.x - resolution.x * ui_size, resolution.y);
 
-			tile.draw();
+			auto &tiles = map.getTiles();
+			for (auto &tile : tiles) {
+				tile.getHeightmap().bind(GL_TEXTURE1, GL_TEXTURE_2D);
+				shader.setUniformData(shader.getUniformLocation("uHeightmap"), tile.getHeightmap());
+				model = glm::translate(glm::mat4{1.f}, glm::vec3{glm::vec2(tile.getIndex()), 0.f});
+				shader.setUniformData(model_uniform, model);
+				grid.draw();
+			}
 
 			glViewport(0, 0, resolution.x, resolution.y);
 
@@ -224,7 +234,7 @@ int main() {
 					ImGui::SameLine();
 					ImGui::InputText("", path, 512);
 					if (path != map_file) {
-						tile.loadFromFile(path);
+						map.loadFromFile(path);
 						map_file = path;
 					}
 				}

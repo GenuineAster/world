@@ -13,6 +13,5 @@ void main() {
 	vec3 normal = normalize(gNormal);
 	float brightness = dot(to_surface, normal);
 
-	fColor = texture(uTex, gTexcoords);
-	fColor.rgb *= brightness;
+	fColor = vec4(texture(uTex, gTexcoords).rgb * brightness, 1.0);
 }

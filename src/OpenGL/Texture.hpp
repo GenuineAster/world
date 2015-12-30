@@ -130,11 +130,15 @@ namespace Graphics
 			 */
 			bool isValid() const;
 
+			/*! \brief Move assignment
+			 */
+			Texture &operator=(Texture &&other);
+
 			/*! \brief Constructs the texture
 			 */
 			Texture();
 
-			/*! \note Move constructor. Does not delete the texture moved from.
+			/*! \note Move constructor.
 			 *  \param[in] other the Texture to move from
 			 */
 			Texture(Texture &&other);

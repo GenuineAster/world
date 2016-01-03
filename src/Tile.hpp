@@ -57,6 +57,16 @@ public:
 		return m_heightmap;
 	}
 
+	Tile &operator=(Tile &&other) {
+		this->m_default = other.m_default;
+		this->m_index = other.m_index;
+
+		this->m_heightmap_path = other.m_heightmap_path;
+		this->m_heightmap = std::move(other.m_heightmap);
+
+		return *this;
+	}
+
 	Tile() = default;
 
 	Tile(Tile &&other) {

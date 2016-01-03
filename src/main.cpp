@@ -23,6 +23,7 @@
 #include "Camera.hpp"
 #include "Tile.hpp"
 #include "TileMap.hpp"
+#include "RelTileMap.hpp"
 #include "DrawableGrid.hpp"
 #include "Util/FrameTimer.hpp"
 
@@ -128,7 +129,7 @@ int main() {
 	shader.setUniformData(model_uniform, model);
 
 
-	camera.target = {0.f, 0.f, 1.f};
+	camera.position = {0.f, 0.f, 1.f};
 	glm::mat4 view = camera.getTransform();
 	auto view_uniform = shader.getUniformLocation("uView");
 	shader.setUniformData(view_uniform, view);
@@ -137,8 +138,10 @@ int main() {
 	DrawableGrid<uint32_t, GL_UNSIGNED_INT> grid(128);
 
 	TileMap map;
-	std::string map_file = "res/maps/basic.json";
-	map.loadFromFile("res/maps/basic.json");
+	std::string map_file = "res/maps/basic/basic.json";
+	map.loadFromFile(map_file.c_str());
+	
+	RelTileMap rel_map(10);
 
 	Graphics::OpenGL::Texture dirt;
 	{
@@ -155,7 +158,7 @@ int main() {
 
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 
-	constexpr float ui_size = 0.2;
+	constexpr float ui_size = 0.3;
 
 	auto frame_start = std::chrono::high_resolution_clock::now();
 
@@ -175,37 +178,39 @@ int main() {
 
 			if (!ImGui::GetIO().WantCaptureKeyboard) {
 				if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-					camera.target += camera.getDirection() * (frametime * 1.f);
+					camera.position += camera.getDirection() * (frametime * 1.f);
 				}
 				if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-					camera.target -= camera.getRight() * (frametime * 1.f);
+					camera.position -= camera.getRight() * (frametime * 1.f);
 				}
 				if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-					camera.target -= camera.getDirection() * (frametime * 1.f);
+					camera.position -= camera.getDirection() * (frametime * 1.f);
 				}
 				if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-					camera.target += camera.getRight() * (frametime * 1.f);
+					camera.position += camera.getRight() * (frametime * 1.f);
 				}
 				if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-					camera.target += camera.getUp() * (frametime * 1.f);
+					camera.position += camera.getUp() * (frametime * 1.f);
 				}
 				if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-					camera.target -= camera.getUp() * (frametime * 1.f);
+					camera.position -= camera.getUp() * (frametime * 1.f);
 				}
 			}
 
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			view = camera.getTransform();
+			view = camera.getModulatedTransform({1.f, 1.f});
 			shader.setUniformData(view_uniform, view);
 
 			glViewport(0, 0, resolution.x - resolution.x * ui_size, resolution.y);
 
-			auto &tiles = map.getTiles();
-			for (auto &tile : tiles) {
+			for (const auto &base_index : rel_map.getIndices()) {
+				const auto index = base_index + camera.getPositionTileIndex({1.f, 1.f});
+
+				auto &tile = map.getTileOrDefault(index.x, index.y);
 				tile.getHeightmap().bind(GL_TEXTURE1, GL_TEXTURE_2D);
 				shader.setUniformData(shader.getUniformLocation("uHeightmap"), tile.getHeightmap());
-				model = glm::translate(glm::mat4{1.f}, glm::vec3{glm::vec2(tile.getIndex()), 0.f});
+				model = glm::translate(glm::mat4{1.f}, glm::vec3{glm::vec2(base_index), 0.f});
 				shader.setUniformData(model_uniform, model);
 				grid.draw();
 			}
@@ -232,8 +237,10 @@ int main() {
 					ImGui::SameLine();
 					ImGui::InputText("", path, 512);
 					if (path != map_file) {
-						map.loadFromFile(path);
-						map_file = path;
+						try {
+							map.loadFromFile(path);
+							map_file = path;
+						} catch (const std::exception &e) {}
 					}
 				}
 				ImGui::End();
@@ -257,7 +264,7 @@ int main() {
 			double avg = frame_timer.sum / frame_timer.count;
 			std::cout<<"avg frametime: "<<std::setw(12)<<static_cast<std::size_t>(1e9*avg)<<"ns"<<std::endl;
 
-			std::cout<<"position:"<<camera.target<<std::endl;
+			std::cout<<"position:"<<camera.position<<std::endl;
 
 			frame_timer = Util::FrameTimer();
 			glfwSetTime(0.0);

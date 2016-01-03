@@ -135,7 +135,9 @@ namespace Graphics
 			this->m_valid = other.m_valid;
 			this->m_tex_num = other.m_tex_num;
 
-			other.m_valid = 0;
+			other.m_valid = false;
+			other.m_tex_num = -1;
+			other.m_target  = -1;
 			other.m_texture = -1;
 			return *this;
 		}
@@ -147,7 +149,9 @@ namespace Graphics
 			this->m_valid = other.m_valid;
 			this->m_tex_num = other.m_tex_num;
 
-			other.m_valid = 0;
+			other.m_valid = false;
+			other.m_tex_num = -1;
+			other.m_target  = -1;
 			other.m_texture = -1;
 		}
 

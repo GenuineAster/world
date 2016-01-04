@@ -111,6 +111,11 @@ namespace Graphics
 			 */
 			GLenum getTarget() const;
 
+			/*! \brief Gets the texture name
+			 * \returns the OpenGL texture name
+			 */
+			GLuint getTextureName() const;
+
 			/*! \brief Destroys the texture
 			 */
 			void destroy();

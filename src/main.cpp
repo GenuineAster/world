@@ -43,6 +43,8 @@ constexpr struct {float x,y;} resolution {1280, 720};
 
 void initCallbacks(GLFWwindow *window);
 
+constexpr float ui_size = 0.3;
+
 int main() {
 	// Window/context setup
 	glfwInit();
@@ -89,51 +91,120 @@ int main() {
 
 
 	// Shader setup
-	Graphics::OpenGL::Shader vertex(GL_VERTEX_SHADER);
-	vertex.setSourceFromFile("res/shaders/shader.vert");
-	vertex.compile();
+	Graphics::OpenGL::Shader render_vertex(GL_VERTEX_SHADER);
+	render_vertex.setSourceFromFile("res/shaders/shader.vert");
+	render_vertex.compile();
 
-	Graphics::OpenGL::Shader geometry(GL_GEOMETRY_SHADER);
-	geometry.setSourceFromFile("res/shaders/shader.geom");
-	geometry.compile();
+	Graphics::OpenGL::Shader render_geometry(GL_GEOMETRY_SHADER);
+	render_geometry.setSourceFromFile("res/shaders/shader.geom");
+	render_geometry.compile();
 
-	Graphics::OpenGL::Shader fragment(GL_FRAGMENT_SHADER);
-	fragment.setSourceFromFile("res/shaders/shader.frag");
-	fragment.compile();
+	Graphics::OpenGL::Shader render_fragment(GL_FRAGMENT_SHADER);
+	render_fragment.setSourceFromFile("res/shaders/shader.frag");
+	render_fragment.compile();
 
-	Graphics::OpenGL::ShaderProgram shader;
-	shader.create();
-	shader.attach(vertex);
-	shader.attach(geometry);
-	shader.attach(fragment);
-	shader.link();
-	shader.bindFragDataLocation("fColor", 0);
-	shader.use();
+	Graphics::OpenGL::ShaderProgram render_shader;
+	render_shader.create();
+	render_shader.attach(render_vertex);
+	render_shader.attach(render_geometry);
+	render_shader.attach(render_fragment);
+	render_shader.link();
+	render_shader.bindFragDataLocation("fColor", 0);
+	render_shader.use();
 
+	Graphics::OpenGL::Framebuffer render_fb;
+	render_fb.create();
+	render_fb.bind();
+	Graphics::OpenGL::Texture render_color;
+	render_color.create();
+	render_color.bind(GL_TEXTURE10, GL_TEXTURE_2D);
+	render_color.texImage2D(0, GL_RGB8, resolution.x - resolution.x * ui_size, resolution.y, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+	render_fb.bindTexture2D(GL_COLOR_ATTACHMENT0, render_color, 0);
+	Graphics::OpenGL::Texture render_depth;
+	render_depth.create();
+	render_depth.bind(GL_TEXTURE11, GL_TEXTURE_2D);
+	render_depth.texImage2D(0, GL_DEPTH_COMPONENT32, resolution.x - resolution.x * ui_size, resolution.y, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	render_fb.bindTexture2D(GL_DEPTH_ATTACHMENT, render_depth, 0);
+	render_fb.drawBuffers({GL_COLOR_ATTACHMENT0});
 
 	// Uniform setup/defaults
 	float near = 0.1f/256.f;
-	auto near_uniform = shader.getUniformLocation("uNear");
-	shader.setUniformData(near_uniform, near);
+	auto near_uniform = render_shader.getUniformLocation("uNear");
+	render_shader.setUniformData(near_uniform, near);
 
 	float far = 1000000.f/256.f;
-	auto far_uniform = shader.getUniformLocation("uFar");
-	shader.setUniformData(far_uniform, far);
+	auto far_uniform = render_shader.getUniformLocation("uFar");
+	render_shader.setUniformData(far_uniform, far);
 
 	glm::mat4 projection = glm::perspective(glm::radians(90.f), resolution.x/resolution.y, near, far);
-	auto projection_uniform = shader.getUniformLocation("uProjection");
-	shader.setUniformData(projection_uniform, projection);
+	auto projection_uniform = render_shader.getUniformLocation("uProjection");
+	render_shader.setUniformData(projection_uniform, projection);
 
 	glm::mat4 model = glm::translate(glm::mat4(1.f), {0.f, 0.f, 0.f});
-	auto model_uniform = shader.getUniformLocation("uModel");
-	shader.setUniformData(model_uniform, model);
-
+	auto model_uniform = render_shader.getUniformLocation("uModel");
+	render_shader.setUniformData(model_uniform, model);
 
 	camera.position = {0.f, 0.f, 1.f};
 	glm::mat4 view = camera.getTransform();
-	auto view_uniform = shader.getUniformLocation("uView");
-	shader.setUniformData(view_uniform, view);
+	auto view_uniform = render_shader.getUniformLocation("uView");
+	render_shader.setUniformData(view_uniform, view);
 
+
+
+	Graphics::OpenGL::Framebuffer grid_fb;
+	grid_fb.create();
+	grid_fb.bind();
+	Graphics::OpenGL::Texture grid_color;
+	grid_color.create();
+	grid_color.bind(GL_TEXTURE13, GL_TEXTURE_2D);
+	grid_color.texImage2D(0, GL_RGB8, resolution.x - resolution.x * ui_size, resolution.y, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+	grid_fb.bindTexture2D(GL_COLOR_ATTACHMENT0, grid_color, 0);
+	// Graphics::OpenGL::Texture grid_depth;
+	// grid_depth.create();
+	// grid_depth.bind(GL_TEXTURE14, GL_TEXTURE_2D);
+	// grid_depth.texImage2D(0, GL_DEPTH_COMPONENT32, resolution.x - resolution.x * ui_size, resolution.y, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	// grid_fb.bindTexture2D(GL_DEPTH_ATTACHMENT, grid_depth, 0);
+	// grid_fb.drawBuffers({GL_COLOR_ATTACHMENT0});
+
+	Graphics::OpenGL::Shader grid_vertex(GL_VERTEX_SHADER);
+	grid_vertex.setSourceFromFile("res/shaders/grid.vert");
+	grid_vertex.compile();
+
+	Graphics::OpenGL::Shader grid_fragment(GL_FRAGMENT_SHADER);
+	grid_fragment.setSourceFromFile("res/shaders/grid.frag");
+	grid_fragment.compile();
+
+	Graphics::OpenGL::ShaderProgram grid_shader;
+	grid_shader.create();
+	grid_shader.attach(grid_vertex);
+	grid_shader.attach(grid_fragment);
+	grid_shader.link();
+	grid_shader.bindFragDataLocation("fColor", 0);
+	grid_shader.use();
+
+	grid_shader.setUniformData(grid_shader.getUniformLocation("uColor"), render_color);
+	grid_shader.setUniformData(grid_shader.getUniformLocation("uDepth"), render_depth);
+	grid_shader.setUniformData(grid_shader.getUniformLocation("uProj"), projection);
+	auto grid_view = grid_shader.getUniformLocation("uView");
+
+
+	Graphics::OpenGL::Shader display_vertex(GL_VERTEX_SHADER);
+	display_vertex.setSourceFromFile("res/shaders/display.vert");
+	display_vertex.compile();
+
+	Graphics::OpenGL::Shader display_fragment(GL_FRAGMENT_SHADER);
+	display_fragment.setSourceFromFile("res/shaders/display.frag");
+	display_fragment.compile();
+
+	Graphics::OpenGL::ShaderProgram display_shader;
+	display_shader.create();
+	display_shader.attach(display_vertex);
+	display_shader.attach(display_fragment);
+	display_shader.link();
+	display_shader.bindFragDataLocation("fColor", 0);
+	display_shader.use();
+
+	display_shader.setUniformData(display_shader.getUniformLocation("uColor"), grid_color);
 
 	DrawableGrid<uint32_t, GL_UNSIGNED_INT> grid(128);
 
@@ -141,7 +212,7 @@ int main() {
 	std::string map_file = "res/maps/basic/basic.json";
 	map.loadFromFile(map_file.c_str());
 	
-	RelTileMap rel_map(10);
+	RelTileMap rel_map(5);
 
 	Graphics::OpenGL::Texture dirt;
 	{
@@ -152,13 +223,12 @@ int main() {
 		dirt.texImage2D(0, GL_RGB, dirt_img.getWidth(), dirt_img.getHeight(), GL_BGR, GL_UNSIGNED_BYTE, dirt_img.accessPixels());
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
-	shader.setUniformData(shader.getUniformLocation("uTex"), dirt);
+	render_shader.use();
+	render_shader.setUniformData(render_shader.getUniformLocation("uTex"), dirt);
 
 	Util::FrameTimer frame_timer;
 
 	glClearColor(0.0, 0.0, 0.0, 1.0);
-
-	constexpr float ui_size = 0.3;
 
 	auto frame_start = std::chrono::high_resolution_clock::now();
 
@@ -196,25 +266,50 @@ int main() {
 					camera.position -= camera.getUp() * (frametime * 1.f);
 				}
 			}
-
+			
+			render_shader.use();
+			render_fb.bind();
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			
 
 			view = camera.getModulatedTransform({1.f, 1.f});
-			shader.setUniformData(view_uniform, view);
+			render_shader.setUniformData(view_uniform, view);
 
 			glViewport(0, 0, resolution.x - resolution.x * ui_size, resolution.y);
+
 
 			for (const auto &base_index : rel_map.getIndices()) {
 				const auto index = base_index + camera.getPositionTileIndex({1.f, 1.f});
 
 				auto &tile = map.getTileOrDefault(index.x, index.y);
 				tile.getHeightmap().bind(GL_TEXTURE1, GL_TEXTURE_2D);
-				shader.setUniformData(shader.getUniformLocation("uHeightmap"), tile.getHeightmap());
+				render_shader.setUniformData(render_shader.getUniformLocation("uHeightmap"), tile.getHeightmap());
 				model = glm::translate(glm::mat4{1.f}, glm::vec3{glm::vec2(base_index), 0.f});
-				shader.setUniformData(model_uniform, model);
+				render_shader.setUniformData(model_uniform, model);
 				grid.draw();
 			}
 
+
+			grid_shader.use();
+			grid_shader.setUniformData(grid_view, view);
+			grid_fb.bind();
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_CULL_FACE);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			glEnable(GL_CULL_FACE);
+			glEnable(GL_DEPTH_TEST);
+
+			display_shader.use();
+			Graphics::OpenGL::Framebuffer::bind(nullptr);
+
+			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_CULL_FACE);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			glEnable(GL_CULL_FACE);
+			glEnable(GL_DEPTH_TEST);
+			
 			glViewport(0, 0, resolution.x, resolution.y);
 
 			{

@@ -99,6 +99,11 @@ namespace Graphics
 			return m_tex_num;
 		}
 
+		GLuint Texture::getTextureName() const
+		{
+			return m_texture;
+		}
+
 		void Texture::destroy()
 		{
 			if (this->isValid()) {
